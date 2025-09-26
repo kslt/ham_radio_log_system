@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Station Map</title>
+  <meta charset="utf-8"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>#map { height: 100vh; }</style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    function locatorToLatLon(locator) {
+      locator = locator.toUpperCase();
+      if (!/^[A-R]{2}\d{2}[A-X]{2}$/.test(locator)) return null;
+      let lon = (locator.charCodeAt(0) - 65) * 20 - 180;
+      let lat = (locator.charCodeAt(1) - 65) * 10 - 90;
+      lon += parseInt(locator.charAt(2)) * 2;
+      lat += parseInt(locator.charAt(3)) * 1;
+      lon += (locator.charCodeAt(4) - 65) * (5/60) + (2.5/60);
+      lat += (locator.charCodeAt(5) - 65) * (2.5/60) + (1.25/60);
+      return [lat, lon];
+    }
+
+    const map = L.map('map').setView([59.3, 18.0], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    async function load() {
+      const res = await fetch('/api/users/locators');
+      const users = await res.json();
+      users.forEach(u => {
+        const latlon = locatorToLatLon(u.locator);
+        if (latlon) {
+          L.marker(latlon).addTo(map)
+            .bindPopup(`<b>${u.callsign}</b><br>Locator: ${u.locator}`);
+        }
+      });
+    }
+    load();
+  </script>
+</body>
+</html>
